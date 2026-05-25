@@ -1,6 +1,6 @@
 # Lightweight Tuberculosis Detection from Smartphone-Captured Chest X-Rays Using Compressed Deep Learning
 
-**Authors:** Jonathan Liu et al.
+**Authors:** Adithya Balakumar and Jonathan Liu
 **Date:** May 2026
 **Repository:** https://github.com/adithyabalakumar007-ai/lightweight-tb-net
 
