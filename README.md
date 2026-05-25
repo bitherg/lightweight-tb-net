@@ -1,190 +1,260 @@
-# \# Lightweight TB-Net: Compressed Deep Learning for Tuberculosis Detection
+\# Lightweight TB-Net
 
-# 
 
-# A PyTorch reimplementation of TB-Net (Wong et al., 2022) with model compression for on-device Android deployment. Achieves 99.39% accuracy and 97.86% sensitivity on chest X-ray classification, compressed to as small as 0.30 MB for mobile use.
 
-# 
+> Compressed deep learning for tuberculosis detection on Android smartphones
 
-# \## Motivation
 
-# 
 
-# Rural clinics across Africa and South Asia often lack digital X-ray machines — clinicians photograph X-ray films with smartphones instead. This project produces a model small enough to run entirely on-device with no internet required, targeting mid-range Android hardware.
+A PyTorch reimplementation of TB-Net (Wong et al., 2022) with quantization, pruning, and knowledge distillation. All models run under 6 MB — well below the 50 MB mobile deployment target.
 
-# 
 
-# \## Results
 
-# 
+\---
 
-# | Model | Size | Accuracy | Sensitivity | Specificity | AUC |
 
-# |---|---|---|---|---|---|
 
-# | TB-Net FP32 | 1.07 MB | 99.39% | 97.86% | 100.00% | 0.9987 |
+\## Why this exists
 
-# | TB-Net FP16 | 0.55 MB | 99.39% | 97.86% | 100.00% | 0.9986 |
 
-# | TB-Net INT8 | 0.82 MB | 99.39% | 97.86% | 100.00% | 0.9987 |
 
-# | TB-Net 25% pruned | 1.07 MB | 99.59% | 98.57% | 100.00% | 0.9996 |
+Rural clinics across Africa and South Asia often lack digital X-ray machines. Clinicians photograph X-ray films with smartphones instead. Existing AI models are too large and require internet connectivity. This project produces a model that runs entirely on-device, no internet required, on mid-range Android hardware.
 
-# | TB-Net 50% pruned | 1.07 MB | 98.57% | 97.14% | 99.14% | 0.9987 |
 
-# | MobileNetV3 student | 5.91 MB | 98.57% | 96.43% | 99.43% | 0.9973 |
 
-# | ONNX FP32 | 1.04 MB | 99.39% | 97.86% | 100.00% | 0.9987 |
+\---
 
-# | ONNX INT8 | 0.30 MB | 99.39% | 97.86% | 100.00% | 0.9987 |
 
-# 
 
-# All models are under 6 MB — well below the 50 MB deployment target. ONNX inference latency: 0.85 ms on CPU.
+\## Results
 
-# 
 
-# \## Setup
 
-# 
+| Model | Size | Accuracy | Sensitivity | Specificity | AUC |
 
-# conda create -n tb\_detect python=3.10
+|---|---|---|---|---|---|
 
-# conda activate tb\_detect
+| TB-Net FP32 (baseline) | 1.07 MB | 99.39% | 97.86% | 100.00% | 0.9987 |
 
-# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+| TB-Net FP16 | 0.55 MB | 99.39% | 97.86% | 100.00% | 0.9986 |
 
-# pip install numpy opencv-python scikit-learn matplotlib Pillow tqdm pandas onnx onnxruntime
+| TB-Net INT8 | 0.82 MB | 99.39% | 97.86% | 100.00% | 0.9987 |
 
-# 
+| TB-Net 25% pruned | 1.07 MB | 99.59% | 98.57% | 100.00% | 0.9996 |
 
-# \## Dataset
+| TB-Net 50% pruned | 1.07 MB | 98.57% | 97.14% | 99.14% | 0.9987 |
 
-# 
+| MobileNetV3 student | 5.91 MB | 98.57% | 96.43% | 99.43% | 0.9973 |
 
-# Download the Tuberculosis Chest X-Ray Dataset from Kaggle:
+| ONNX FP32 | 1.04 MB | 99.39% | 97.86% | 100.00% | 0.9987 |
 
-# https://www.kaggle.com/datasets/tawsifurrahman/tuberculosis-tb-chest-xray-dataset
+| ONNX INT8 | 0.30 MB | 99.39% | 97.86% | 100.00% | 0.9987 |
 
-# 
 
-# Extract it, then run:
 
-# 
+ONNX CPU inference latency: 0.85 ms average. Estimated Android latency: 50-200 ms.
 
-# python fix\_dataset.py
+Recommended deployment model: deploy/tbnet\_int8.onnx (0.30 MB, Android ONNX Runtime Mobile).
 
-# python fix\_tb.py
 
-# python make\_splits.py
 
-# 
+\---
 
-# This produces 4,900 preprocessed images (3,500 normal, 1,400 TB-positive) with an 80/10/10 train/val/test split.
 
-# 
 
-# \## Training
+\## Quickstart
 
-# 
 
-# python train\_pytorch.py
 
-# 
+\### 1. Install dependencies
 
-# Trains for 10 epochs using Adam (lr=0.0001), batch size 32. Best checkpoint saved to models/tbnet\_best.pth.
 
-# 
 
-# \## Compression
+conda create -n tb\_detect python=3.10
 
-# 
+conda activate tb\_detect
 
-# python quantize.py       # FP16 and INT8 quantization
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
-# python prune.py          # L1 pruning at 25%, 50%, 75% sparsity
+pip install numpy opencv-python scikit-learn matplotlib Pillow tqdm pandas onnx onnxruntime
 
-# python distill.py        # Knowledge distillation to MobileNetV3-Small
 
-# 
 
-# \## Android Deployment
+\### 2. Download the dataset
 
-# 
 
-# python android\_deploy.py
 
-# 
+Download from Kaggle: https://www.kaggle.com/datasets/tawsifurrahman/tuberculosis-tb-chest-xray-dataset
 
-# Exports to ONNX FP32 and INT8 formats in the deploy/ folder. Use with ONNX Runtime Mobile for Android integration.
 
-# 
 
-# Recommended deployment models:
+Extract it, then run:
 
-# \- deploy/tbnet\_int8.onnx  — 0.30 MB, recommended for mid-range Android devices
 
-# \- deploy/tbnet.onnx       — 1.04 MB, FP32 fallback for maximum accuracy
 
-# 
+python fix\_dataset.py --datapath "path/to/TB\_Chest\_Radiography\_Database"
 
-# \## Repository Structure
+python fix\_tb.py
 
-# 
+python make\_splits.py
 
-# tbnet\_pytorch.py        # Model architecture
 
-# train\_pytorch.py        # Training script
 
-# quantize.py             # Quantization experiments
+\### 3. Train
 
-# prune.py                # Pruning experiments
 
-# distill.py              # Knowledge distillation
 
-# android\_deploy.py       # ONNX export and benchmarking
+python train\_pytorch.py
 
-# fix\_dataset.py          # Dataset preprocessing
 
-# fix\_tb.py               # TB image renaming fix
 
-# make\_splits.py          # Train/val/test split generator
+Trains for 10 epochs. Best checkpoint saved to models/tbnet\_best.pth.
 
-# train\_split\_new.csv     # Training split (3,920 images)
 
-# val\_split\_new.csv       # Validation split (490 images)
 
-# test\_split\_new.csv      # Test split (490 images)
+\### 4. Compress
 
-# deploy/
 
-# &#x20; tbnet.onnx            # ONNX FP32 model
 
-# &#x20; tbnet\_int8.onnx       # ONNX INT8 model (Android recommended)
+python quantize.py      # FP16 and INT8 post-training quantization
 
-# tbnet\_paper.md          # Full research paper
+python prune.py         # L1 unstructured pruning at 25%, 50%, 75% sparsity
 
-# 
+python distill.py       # Knowledge distillation into MobileNetV3-Small
 
-# \## Citation
 
-# 
 
-# wong2021tbnet
+\### 5. Export for Android
 
-# title: TB-Net: A Tailored, Self-Attention Deep Convolutional Neural Network Design for Detection of Tuberculosis Cases from Chest X-ray Images
 
-# author: Alexander Wong, James Ren Hou Lee, Hadi Rahmat-Khah, Ali Sabri, Amer Alaref
 
-# year: 2021
+python android\_deploy.py
 
-# arxiv: 2104.03165
 
-# 
 
-# \## License
+Outputs deploy/tbnet.onnx and deploy/tbnet\_int8.onnx.
 
-# 
+Use with ONNX Runtime Mobile: https://onnxruntime.ai/docs/tutorials/mobile/
 
-# MIT License. Model weights are for research use only. Not intended for clinical diagnosis.
+
+
+\---
+
+
+
+\## Repository structure
+
+
+
+lightweight-tb-net/
+
+├── tbnet\_pytorch.py        # Model architecture (self-attention CNN)
+
+├── train\_pytorch.py        # Training loop
+
+├── quantize.py             # Quantization experiments
+
+├── prune.py                # Pruning experiments
+
+├── distill.py              # Knowledge distillation
+
+├── android\_deploy.py       # ONNX export + benchmarking
+
+├── fix\_dataset.py          # Windows-compatible preprocessing
+
+├── fix\_tb.py               # TB image renaming (Tuberculosis- to TB-)
+
+├── make\_splits.py          # Stratified train/val/test split generation
+
+├── train\_split\_new.csv     # 3,920 training images
+
+├── val\_split\_new.csv       # 490 validation images
+
+├── test\_split\_new.csv      # 490 test images
+
+├── deploy/
+
+│   ├── tbnet.onnx          # ONNX FP32 (1.04 MB)
+
+│   └── tbnet\_int8.onnx     # ONNX INT8 (0.30 MB) — recommended for Android
+
+└── tbnet\_paper.md          # Full research paper
+
+
+
+\---
+
+
+
+\## Key findings
+
+
+
+\- FP16 quantization halves model size with zero accuracy loss
+
+\- 25% pruning improves sensitivity from 97.86% to 98.57% — moderate pruning acts as a regularizer
+
+\- 75% pruning drops sensitivity to 79.29% — below the WHO 90% minimum threshold for TB screening
+
+\- MobileNetV3 student matches teacher sensitivity within 1.43% (target: within 2%)
+
+\- All models are 8-90x under the 50 MB Android deployment target
+
+
+
+\---
+
+
+
+\## Paper
+
+
+
+See tbnet\_paper.md for the full write-up including methodology, compression analysis, confusion matrices, and deployment feasibility assessment.
+
+
+
+\---
+
+
+
+\## Citation
+
+
+
+If you use this work, please also cite the original TB-Net paper:
+
+
+
+@misc{wong2021tbnet,
+
+&#x20; title={TB-Net: A Tailored, Self-Attention Deep Convolutional Neural Network
+
+&#x20;        Design for Detection of Tuberculosis Cases from Chest X-ray Images},
+
+&#x20; author={Alexander Wong and James Ren Hou Lee and Hadi Rahmat-Khah
+
+&#x20;         and Ali Sabri and Amer Alaref},
+
+&#x20; year={2021},
+
+&#x20; eprint={2104.03165},
+
+&#x20; archivePrefix={arXiv}
+
+}
+
+
+
+\---
+
+
+
+\## License
+
+
+
+MIT. Model weights are for research purposes only.
+
+Not intended for clinical diagnosis.
 
